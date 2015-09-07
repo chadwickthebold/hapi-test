@@ -19,101 +19,98 @@ var User = mongoose.model('User', userSchema);
 var server = new Hapi.Server();
 server.connection({ port: 3000 });
 
+mongoose.connect('mongodb://localhost/test');
+var db = mongoose.connection;
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', function (callback) {
+
+});
+
 
 server.route({
-    method: 'GET',
-    path: '/',
-    handler: function (request, reply) {
-        reply('Server listening at ' + server.info.uri + ' . Make requests to /users/ to perform CRUD operations');
-    }
+  method: 'GET',
+  path: '/',
+  handler: function (request, reply) {
+      reply('Server listening at ' + server.info.uri + ' . Make requests to /users/ to perform CRUD operations');
+  }
 });
 
 // Create
 server.route({
-    method: 'Post',
-    path: '/users',
-    handler: function (request, reply) {
-        var db;
-        mongoose.connect('mongodb://localhost/test');
-        db = mongoose.connection;
-        db.on('error', console.error.bind(console, 'connection error:'));
-        db.once('open', function (callback) {
-            var newUser = new User({
-                firstname: request.query.firstname,
-                lastname: request.query.lastname,
-                gender:   request.query.gender,
-                dob:      request.query.dob,
-                streetaddress: request.query.streetaddress,
-                city:     request.query.city,
-                state:    request.query.state,
-                zip:      request.query.zip
-            });
+  method: 'POST',
+  path: '/users',
+  handler: function (request, reply) {
+    server.log('info', 'Got POST with firstname: ' + request.headers.firstname);
 
-            newUser.save(function (err) {
-                if (err) return console.error(err);
-            });
+    var newUser = new User({
+      firstname: request.headers.firstname,
+      lastname: request.headers.lastname,
+      gender:   request.headers.gender,
+      dob:      request.headers.dob,
+      streetaddress: request.headers.streetaddress,
+      city:     request.headers.city,
+      state:    request.headers.state,
+      zip:      request.headers.zip
+    });
 
-            reply("ok!");
+      newUser.save(function (err) {
+        if (err) {
+          reply("not ok!");
+          return console.error(err);
+        }
+      });
 
-            db.close();
-        });
-    }
+      reply("ok!");
+  }
 });
 
 // Read
 server.route({
-    method: 'GET',
-    path: '/users/{firstname}',
-    handler: function (request, reply) {
-        var db;
-        mongoose.connect('mongodb://localhost/test');
-        db = mongoose.connection;
-        db.on('error', console.error.bind(console, 'connection error:'));
-        db.once('open', function (callback) {
-            User.find({ firstname: request.params.firstname }, function(err, users) {
-                reply('Found User for firstname: ' + encodeURIComponent(request.params.firstname) + ' with the following data:\nlastname: '+ users[0].lastname+'\ngender: '+ users[0].gender+'\ndob: '+ users[0].dob+'\nstreet address: '+ users[0].streetaddress+'\ncity: '+ users[0].city+'\nstate: '+ users[0].state+'\nzipcode: '+ users[0].zip);
-                db.close();
-            });
-        });
-    }
+  method: 'GET',
+  path: '/users/{firstname}',
+  handler: function (request, reply) {
+    User.find({ firstname: request.params.firstname }, function(err, users) {
+      reply('Found User for firstname: ' + encodeURIComponent(request.params.firstname) + ' with the following data:\nlastname: '+ users[0].lastname+'\ngender: '+ users[0].gender+'\ndob: '+ users[0].dob+'\nstreet address: '+ users[0].streetaddress+'\ncity: '+ users[0].city+'\nstate: '+ users[0].state+'\nzipcode: '+ users[0].zip);
+    });
+  }
 });
 
 // Update
 server.route({
-    method: 'PUT',
-    path: '/users/{name}',
-    handler: function (request, reply) {
-        
-    }
+  method: 'PUT',
+  path: '/users/{name}',
+  handler: function (request, reply) {
+
+  }
 });
 
 // Delete
 server.route({
-    method: 'DELETE',
-    path: '/users/{name}',
-    handler: function (request, reply) {
-        
-    }
+  method: 'DELETE',
+  path: '/users/{name}',
+  handler: function (request, reply) {
+
+  }
 });
 
 
 server.register({
-    register: Good,
-    options: {
-        reporters: [{
-            reporter: require('good-console'),
-            events: {
-                response: '*',
-                log: '*'
-            }
-        }]
-    }
+  register: Good,
+  options: {
+    reporters: [{
+      reporter: require('good-console'),
+      events: {
+        response: '*',
+        log: '*'
+      }
+    }]
+  }
 }, function (err) {
-    if (err) {
-        throw err; // something bad happened loading the plugin
-    }
+  if (err) {
+    throw err; // something bad happened loading the plugin
+  }
 
-    server.start(function () {
-        server.log('info', 'Server running at: ' + server.info.uri);
-    });
+  server.start(function () {
+    server.log('info', 'Server running at: ' + server.info.uri);
+  });
 });
